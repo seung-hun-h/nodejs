@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head')%>
+</head>
+<body>
+    <%- include('../partials/nav')%>
+    <div class="contact contact-index">
+        <h2>Index</h2>
+        <ul>
+            <% contacts.forEach(contact => {%>
+            <a href="/contacts/<%= contact._id%>"><li><%= contact.name %></li></a>
+            <% });%>
+        </ul>
+    </div>
+</body>
+</html>
