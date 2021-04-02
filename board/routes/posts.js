@@ -1,8 +1,10 @@
-var express = require('express');
+var express  = require('express');
 var router = express.Router();
 var Post = require('../models/Post');
+var util = require('../util');
 
-router.get('/', (req, res) => {  
+// Index
+router.get('/', function(req, res){
   Post.find({})
     .sort('-createdAt')
     .exec(function(err, posts){
@@ -11,46 +13,68 @@ router.get('/', (req, res) => {
     });
 });
 
-router.get('/new', (req, res) => {
-    res.render('posts/new');
+// New
+router.get('/new', function(req, res){
+  var post = req.flash('post')[0] || {};
+  var errors = req.flash('errors')[0] || {};
+  res.render('posts/new', { post:post, errors:errors });
 });
 
-router.post('/', (req, res) => {
-    Post.create(req.body, (err, post) => {
-        if (err) return res.json(err)
-        res.redirect('/posts');
-    });
+// create
+router.post('/', function(req, res){
+  Post.create(req.body, function(err, post){
+    if(err){
+      req.flash('post', req.body);
+      req.flash('errors', util.parseError(err));
+      return res.redirect('/posts/new');
+    }
+    res.redirect('/posts');
+  });
 });
 
-router.get('/:id', (req, res) => {
-    Post.findOne({_id:req.params.id}, (err, post) => {
-        if (err) return res.json(err)
-        res.render('posts/show', {post:post});
-    })
-})
-
-router.get('/:id/edit', (req, res) => {
-    Post.findOne({_id: req.params.id}, (err, post) => {
-        if (err) return res.json(err)
-        res.render('posts/edit', {post:post});
-    });
+// show
+router.get('/:id', function(req, res){
+  Post.findOne({_id:req.params.id}, function(err, post){
+    if(err) return res.json(err);
+    res.render('posts/show', {post:post});
+  });
 });
 
-router.put('/:id', (req, res) => {
-    req.body.updatedAt = Date.now();
-    Post.findOneAndUpdate({_id:req.params.id}, req.body, (err, post) => {
+// edit
+router.get('/:id/edit', function(req, res){
+  var post = req.flash('post')[0];
+  var errors = req.flash('errors')[0] || {};
+  if(!post){
+    Post.findOne({_id:req.params.id}, function(err, post){
         if(err) return res.json(err);
-        res.redirect("/posts/"+req.params.id);
-    })
+        res.render('posts/edit', { post:post, errors:errors });
+      });
+  }
+  else {
+    post._id = req.params.id;
+    res.render('posts/edit', { post:post, errors:errors });
+  }
+});
+
+// update
+router.put('/:id', function(req, res){
+  req.body.updatedAt = Date.now();
+  Post.findOneAndUpdate({_id:req.params.id}, req.body, {runValidators:true}, function(err, post){
+    if(err){
+      req.flash('post', req.body);
+      req.flash('errors', util.parseError(err));
+      return res.redirect('/posts/'+req.params.id+'/edit');
+    }
+    res.redirect('/posts/'+req.params.id);
+  });
 });
 
 // destroy
 router.delete('/:id', function(req, res){
-    Post.deleteOne({_id:req.params.id}, function(err){
-        if(err) return res.json(err);
-        res.redirect('/posts');
-    });
+  Post.deleteOne({_id:req.params.id}, function(err){
+    if(err) return res.json(err);
+    res.redirect('/posts');
+  });
 });
 
-
-module.exports = router
+module.exports = router;
