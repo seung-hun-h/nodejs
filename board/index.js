@@ -5,6 +5,7 @@ var methodOverride = require('method-override');
 var flash = require('connect-flash');
 var session = require('express-session');
 var passport = require('./config/passport');
+var util = require('./util');
 var app = express();
 
 require('dotenv').config()
@@ -45,8 +46,12 @@ app.use(function(req,res,next){
 
 // Routes
 app.use('/', require('./routes/home'));
-app.use('/posts', require('./routes/posts'));
+// getQueryString이 posts route가 request 되기 전에 배치하여
+// 모든 post routes 에서 res.locals.getQueryString을 사용할 수 있게 함.
+app.use('/posts', util.getPostQueryString, require('./routes/posts'));
 app.use('/users', require('./routes/users'));
+
+
 
 // Port setting
 var port = 8000;
